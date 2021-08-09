@@ -29,7 +29,7 @@ SECRET_KEY = config('SECRET_KEY')
 # DEBUG = True
 DEBUG = config('DJANGO_DEBUG') != 'False'
 
-ALLOWED_HOSTS = ['eagerapp-deployment.herokuapp.com', 'ec2-44-196-250-191.compute-1.amazonaws.com']
+ALLOWED_HOSTS = ['*']
 
 # Application definition
 
@@ -40,7 +40,6 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    # 'django_extensions',
     'rest_framework',
     'rest_framework_simplejwt',
     'accounts',
@@ -55,6 +54,8 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+
+    # For Django Admin static files
     'whitenoise.middleware.WhiteNoiseMiddleware',
 ]
 
@@ -153,6 +154,7 @@ USE_TZ = True
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 STATIC_URL = '/static/'
 
+
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 # # Extra places for collectstatic to find static files.
@@ -166,4 +168,6 @@ STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # https://devcenter.heroku.com/articles/heroku-postgresql#connecting-with-django
-DATABASES['default'] = dj_database_url.config(conn_max_age=600, ssl_require=True)
+if dj_database_url.config():
+    DATABASES['default'] = dj_database_url.config(conn_max_age=600, ssl_require=True)
+    ALLOWED_HOSTS = ['eagerapp-deployment.herokuapp.com', 'ec2-44-196-250-191.compute-1.amazonaws.com']
