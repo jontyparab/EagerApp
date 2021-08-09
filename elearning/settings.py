@@ -27,7 +27,7 @@ SECRET_KEY = config('SECRET_KEY')
 # DEBUG = True
 DEBUG = config('DJANGO_DEBUG') != 'False'
 
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = ['eagerapp-deployment.herokuapp.com']
 
 # Application definition
 
