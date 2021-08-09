@@ -38,7 +38,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'django_extensions',
+    # 'django_extensions',
     'rest_framework',
     'rest_framework_simplejwt',
     'accounts',
@@ -92,8 +92,8 @@ DATABASES = {
         'NAME': config('DATABASE_NAME'),
         'USER': config('DATABASE_USER'),
         'PASSWORD': config('DATABASE_PASSWORD'),
-        'HOST': 'localhost',
-        'PORT': '',
+        'HOST': config('HOST_NAME'),
+        'PORT': config('PORT'),
     }
 }
 
