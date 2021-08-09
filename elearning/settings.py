@@ -157,5 +157,5 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'static')
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# # https://devcenter.heroku.com/articles/heroku-postgresql#connecting-with-django
-# DATABASES['default'] = dj_database_url.config(conn_max_age=600, ssl_require=True)
+# https://devcenter.heroku.com/articles/heroku-postgresql#connecting-with-django
+DATABASES['default'] = dj_database_url.config(conn_max_age=600, ssl_require=True)
