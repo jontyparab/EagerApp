@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/3.2/ref/settings/
 """
 import os
 from decouple import config
+import dj_database_url
 from datetime import timedelta
 from pathlib import Path
 
@@ -27,7 +28,7 @@ SECRET_KEY = config('SECRET_KEY')
 # DEBUG = True
 DEBUG = config('DJANGO_DEBUG') != 'False'
 
-ALLOWED_HOSTS = ['eagerapp-deployment.herokuapp.com']
+ALLOWED_HOSTS = ['eagerapp-deployment.herokuapp.com', 'ec2-44-196-250-191.compute-1.amazonaws.com']
 
 # Application definition
 
@@ -155,3 +156,6 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'static')
 # https://docs.djangoproject.com/en/3.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# # https://devcenter.heroku.com/articles/heroku-postgresql#connecting-with-django
+# DATABASES['default'] = dj_database_url.config(conn_max_age=600, ssl_require=True)
