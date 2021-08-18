@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from rest_framework.exceptions import PermissionDenied, ValidationError
 from django.contrib.auth import get_user_model
+from django.contrib.auth.password_validation import validate_password as default_password_validator
 from .models import UserProfile
 from learnapp.serializers import CategorySerializer, PostSerializer
 from learnapp.validators import username_validator
@@ -13,8 +14,15 @@ class UserSerializer(serializers.ModelSerializer):
     read_only_fields = ('id',)
 
     def validate_username(self, value):
-        if username_validator(value):
-            raise ValidationError('Please enter valid username.')
+        username_validator(value)
+        # if username_validator(value):
+        #     raise ValidationError('Please enter valid username.')
+        return value
+
+    def validate_password(self, value):
+        default_password_validator(value)
+        # if default_password_validator(value):
+        #     raise ValidationError('Password too simple.')
         return value
 
     def to_representation(self, instance):
