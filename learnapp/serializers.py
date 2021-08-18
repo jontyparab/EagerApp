@@ -32,8 +32,10 @@ class PostSerializer(serializers.ModelSerializer):
     def validate_tags(self, value):
         unique_tags = list(set(value))
         for tag in unique_tags:
-            if tag_validator(tag):
-                raise ValidationError('Please enter valid tags.')
+            tag_validator(tag)
+        # for tag in unique_tags:
+        #     if tag_validator(tag):
+        #         raise ValidationError('Please enter valid tags.')
         return unique_tags
 
     def validate(self, attrs):
