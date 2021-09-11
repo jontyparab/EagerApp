@@ -1,6 +1,6 @@
 from django.shortcuts import get_object_or_404
 from rest_framework import permissions
-from rest_framework.exceptions import PermissionDenied, ValidationError
+from rest_framework.exceptions import PermissionDenied, ValidationError, NotFound
 from rest_framework.authentication import SessionAuthentication, BasicAuthentication
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework.generics import CreateAPIView, ListAPIView, DestroyAPIView, UpdateAPIView, RetrieveAPIView, \
@@ -8,9 +8,10 @@ from rest_framework.generics import CreateAPIView, ListAPIView, DestroyAPIView, 
 from django.db import IntegrityError
 from django.db.models import Avg, Count, Sum
 from django.contrib.auth import get_user_model
-from .serializers import PostSerializer, CollectionSerializer, VoteSerializer, CategorySerializer
+from .serializers import PostSerializer, CollectionSerializer, VoteSerializer, CategorySerializer, CommentSerializer, \
+    VoteCommentSerializer
 from accounts.models import UserProfile
-from .models import Post, Collection, Vote, Category
+from .models import Post, Collection, Vote, Category, Comment, VoteComment
 
 
 # POSTS
@@ -114,6 +115,47 @@ class PostListView(ListAPIView):
         return queryset
 
 
+# POST VOTES
+class VoteCreateView(CreateAPIView):
+    permission_classes = [permissions.IsAuthenticated]
+    model = Vote
+    serializer_class = VoteSerializer
+
+    def perform_create(self, serializer):
+        serializer.is_valid(raise_exception=True)
+        return serializer.save(voter=self.request.user)
+
+
+class VoteRetrieveUpdateDestroyView(RetrieveUpdateDestroyAPIView):
+    permission_classes = [permissions.IsAuthenticated]
+    model = Vote
+    serializer_class = VoteSerializer
+    queryset = Vote.objects.all()
+
+    def get_object(self):
+        queryset = self.get_queryset()
+        obj = get_object_or_404(queryset, post__id=self.kwargs['pk'], voter=self.request.user)
+        return obj
+
+    def partial_update(self, request, *args, **kwargs):
+        kwargs['partial'] = True
+        return self.update(request, *args, **kwargs)
+
+    def perform_update(self, serializer):
+        obj = self.get_object()
+        serializer.is_valid(raise_exception=True)
+        if obj.voter == self.request.user:
+            serializer.save(voter=self.request.user)
+        else:
+            raise PermissionDenied(detail='Permission denied.')
+
+    def perform_destroy(self, instance):
+        if instance.voter == self.request.user:
+            super(VoteRetrieveUpdateDestroyView, self).perform_destroy(instance)
+        else:
+            raise PermissionDenied(detail='Permission denied.')
+
+
 # COLLECTIONS
 class CollectionCreateView(CreateAPIView):
     permission_classes = [permissions.IsAuthenticated]
@@ -189,26 +231,76 @@ class CollectionListView(ListAPIView):
         return queryset
 
 
-# VOTES
-class VoteCreateView(CreateAPIView):
+# COMMENTS
+class CommentCreateView(CreateAPIView):
     permission_classes = [permissions.IsAuthenticated]
-    model = Vote
-    serializer_class = VoteSerializer
+    model = Comment
+    serializer_class = CommentSerializer
+
+    def perform_create(self, serializer):
+        serializer.is_valid(raise_exception=True)
+        return serializer.save(author=self.request.user)
+
+
+# class CommentDetailView(RetrieveAPIView):
+#     permission_classes = [permissions.IsAuthenticated]
+#     model = Comment
+#     serializer_class = CommentSerializer
+#     queryset = Comment.objects.all()
+
+
+class CommentDeleteView(DestroyAPIView):
+    permission_classes = [permissions.IsAuthenticated]
+    model = Comment
+    serializer_class = CommentSerializer
+    queryset = Comment.objects.all()
+
+    def get_object(self):
+        queryset = self.get_queryset()
+        obj = get_object_or_404(queryset, post__id=self.kwargs['pk'], author=self.request.user)
+        return obj
+
+    def perform_destroy(self, instance):
+        if instance.author == self.request.user:
+            super(CommentDeleteView, self).perform_destroy(instance)
+        else:
+            raise PermissionDenied(detail='Permission denied.')
+
+
+class CommentListView(ListAPIView):
+    permission_classes = [permissions.IsAuthenticated]
+    model = Comment
+    serializer_class = CommentSerializer
+
+    def get_queryset(self):
+        if Post.objects.filter(id=self.kwargs['pk']).exists():
+            queryset = Comment.objects.filter(post__id=self.kwargs['pk'])
+            queryset = sorted(queryset, key=lambda a: a.score, reverse=True)
+        else:
+            raise NotFound(detail='The post with given id doesn\'t exist')
+        return queryset
+
+
+# COMMENT VOTE
+class VoteCommentCreateView(CreateAPIView):
+    permission_classes = [permissions.IsAuthenticated]
+    model = VoteComment
+    serializer_class = VoteCommentSerializer
 
     def perform_create(self, serializer):
         serializer.is_valid(raise_exception=True)
         return serializer.save(voter=self.request.user)
 
 
-class VoteRetrieveUpdateDestroyView(RetrieveUpdateDestroyAPIView):
+class VoteCommentRetrieveUpdateDestroyView(RetrieveUpdateDestroyAPIView):
     permission_classes = [permissions.IsAuthenticated]
-    model = Vote
-    serializer_class = VoteSerializer
-    queryset = Vote.objects.all()
+    model = VoteComment
+    serializer_class = VoteCommentSerializer
+    queryset = VoteComment.objects.all()
 
     def get_object(self):
         queryset = self.get_queryset()
-        obj = get_object_or_404(queryset, post__id=self.kwargs['pk'], voter=self.request.user)
+        obj = get_object_or_404(queryset, comment__id=self.kwargs['pk'], voter=self.request.user)
         return obj
 
     def partial_update(self, request, *args, **kwargs):
@@ -225,9 +317,10 @@ class VoteRetrieveUpdateDestroyView(RetrieveUpdateDestroyAPIView):
 
     def perform_destroy(self, instance):
         if instance.voter == self.request.user:
-            super(VoteRetrieveUpdateDestroyView, self).perform_destroy(instance)
+            super(VoteCommentRetrieveUpdateDestroyView, self).perform_destroy(instance)
         else:
             raise PermissionDenied(detail='Permission denied.')
+
 
 
 # class VoteUpdateView(UpdateAPIView):
