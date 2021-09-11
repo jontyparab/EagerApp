@@ -75,3 +75,36 @@ class Vote(models.Model):
 
     def __str__(self):
         return f"#{self.id} {self.voter} voted {self.post.title}"
+
+
+class Comment(models.Model):
+    author = models.ForeignKey(UserModal, on_delete=models.CASCADE, related_name='author')
+    post = models.ForeignKey(Post, on_delete=models.CASCADE)
+    body = models.TextField(null=False, blank=False)
+    created = models.DateTimeField(auto_now_add=True)
+
+    @property
+    def score(self):
+        score = self.comment_votes.aggregate(sum=Sum('vote'))['sum']
+        return score or 0
+
+    def __str__(self):
+        return f"#{self.id} {self.author} commented on {self.post}"
+
+
+class VoteComment(models.Model):
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=['voter', 'comment'], name='unique_comment_vote'),
+        ]
+
+    class VoteType(models.IntegerChoices):
+        downvote = -1, _("Down Vote")
+        upvote = 1, _("Up Vote")
+
+    voter = models.ForeignKey(UserModal, on_delete=models.CASCADE)
+    comment = models.ForeignKey(Comment, on_delete=models.CASCADE, related_name='comment_votes')
+    vote = models.IntegerField(choices=VoteType.choices)
+
+    def __str__(self):
+        return f"#{self.id} {self.voter} voted a comment by {self.comment.author}"

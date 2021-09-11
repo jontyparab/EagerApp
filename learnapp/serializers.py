@@ -1,8 +1,9 @@
 from rest_framework import serializers
+from rest_framework.fields import CurrentUserDefault
 from rest_framework.validators import UniqueTogetherValidator
 from rest_framework.exceptions import PermissionDenied, ValidationError
 from django.contrib.auth import get_user_model
-from .models import Post, Collection, Vote, Category
+from .models import Post, Collection, Vote, Category, Comment, VoteComment
 from .validators import tag_validator
 from django.db.models import ObjectDoesNotExist, Avg, Count, Sum
 import time
@@ -78,6 +79,41 @@ class PostSerializer(serializers.ModelSerializer):
     class Meta:
         model = Post
         fields = ('id', 'author', 'title', 'description', 'resources', 'tags', 'category', 'score')
+
+
+class VoteSerializer(serializers.ModelSerializer):
+    voter = serializers.ReadOnlyField(source='voter.username')
+
+    # Can be used when fields are included in Meta fields
+    # validators = [
+    #     UniqueTogetherValidator(
+    #         queryset=Vote.objects.all(),
+    #         fields=['voter', 'post'],
+    #         message='Something went wrong...',
+    #     ),
+    # ]
+
+    def validate(self, attrs):
+        voter = self.context['request'].user
+        post = attrs.get('post')
+        if not self.instance:
+            if Vote.objects.filter(voter=voter, post=post).exists():
+                raise serializers.ValidationError('Already voted.')
+            else:
+                return attrs
+        elif self.instance:
+            return attrs
+        else:
+            raise serializers.ValidationError('Something went wrong...')
+
+    def update(self, instance, validated_data):
+        instance.vote = validated_data.get('vote', instance.vote)
+        instance.save()
+        return instance
+
+    class Meta:
+        model = Vote
+        fields = ('voter', 'post', 'vote')
 
 
 class CollectionSerializer(serializers.ModelSerializer):
@@ -160,24 +196,59 @@ class CollectionSerializer(serializers.ModelSerializer):
         fields = ('id', 'author', 'title', 'description', 'posts')
 
 
-class VoteSerializer(serializers.ModelSerializer):
-    voter = serializers.ReadOnlyField(source='voter.username')
+class CommentSerializer(serializers.ModelSerializer):
+    score = serializers.ReadOnlyField()
+    author = serializers.ReadOnlyField(source='author.username')
+    read_only_fields = ('id', 'score', 'author')
+    
+    def validate(self, attrs):
+        author = self.context['request'].user
+        post = attrs.get('post')
 
-    # Can be used when fields are included in Meta fields
-    # validators = [
-    #     UniqueTogetherValidator(
-    #         queryset=Vote.objects.all(),
-    #         fields=['voter', 'post'],
-    #         message='Something went wrong...',
-    #     ),
-    # ]
+        # User can't comment on a post twice...
+        try:
+            check_comment = Comment.objects.get(author=author, post=post)
+        except ObjectDoesNotExist:
+            check_comment = None
+
+        # self.instance is only present while updating method
+        if not self.instance:
+            if check_comment:
+                raise serializers.ValidationError('You have already commented on this post.')
+            else:
+                return attrs
+        elif self.instance:
+            if (not check_comment) or (check_comment == self.instance):
+                return attrs
+            else:
+                raise serializers.ValidationError('You have already commented on this post.')
+        else:
+            raise serializers.ValidationError('Something went wrong...')
+
+    def to_representation(self, instance):
+        response = super().to_representation(instance)
+        return response
+
+    def update(self, instance, validated_data):
+        instance.post = validated_data.get('post', instance.description)
+        instance.body = validated_data.get('body', instance.resources)
+        instance.save()
+        return instance
+
+    class Meta:
+        model = Comment
+        fields = ('id', 'author', 'post', 'body', 'score')
+
+
+class VoteCommentSerializer(serializers.ModelSerializer):
+    voter = serializers.ReadOnlyField(source='voter.username')
 
     def validate(self, attrs):
         voter = self.context['request'].user
-        post = attrs.get('post')
+        comment = attrs.get('comment')
         if not self.instance:
-            if Vote.objects.filter(voter=voter, post=post).exists():
-                raise serializers.ValidationError('Already voted.')
+            if VoteComment.objects.filter(voter=voter, comment=comment).exists():
+                raise serializers.ValidationError('Already voted this comment.')
             else:
                 return attrs
         elif self.instance:
@@ -191,5 +262,5 @@ class VoteSerializer(serializers.ModelSerializer):
         return instance
 
     class Meta:
-        model = Vote
-        fields = ('voter', 'post', 'vote')
+        model = VoteComment
+        fields = ('voter', 'comment', 'vote')

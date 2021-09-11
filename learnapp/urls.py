@@ -10,6 +10,9 @@ urlpatterns = [
     path('post/<int:pk>/update/', PostUpdateView.as_view(), name='post_update'),
     path('post/<int:pk>/delete/', PostDeleteView.as_view(), name='post_delete'),
 
+    # Vote Post
+    path('vote/create/', VoteCreateView.as_view(), name='vote_create'),
+    path('vote/<int:pk>/detail/', VoteRetrieveUpdateDestroyView.as_view(), name='vote_detail'),  # pk = Post.id
 
     # Collections
     path('collection/list/', CollectionListView.as_view(), name='collection_list'),
@@ -18,11 +21,15 @@ urlpatterns = [
     path('collection/<int:pk>/update/', CollectionUpdateView.as_view(), name='collection_update'),
     path('collection/<int:pk>/delete/', CollectionDeleteView.as_view(), name='collection_delete'),
 
-    # Vote
-    path('vote/create/', VoteCreateView.as_view(), name='vote_create'),
-    # path('vote/<int:pk>/update/', VoteUpdateView.as_view(), name='vote_update'),  # pk = Post.id
-    # path('vote/<int:pk>/delete/', VoteDeleteView.as_view(), name='vote_delete'),  # pk = Post.id
-    path('vote/<int:pk>/detail/', VoteRetrieveUpdateDestroyView.as_view(), name='vote_rud'),  # pk = Post.id
+    # Comments
+    path('comment/<int:pk>/list/', CommentListView.as_view(), name='comment_list'),  # pk = Post.id
+    path('comment/create/', CommentCreateView.as_view(), name='comment_create'),
+    # path('comment/<int:pk>/detail/', CommentDetailView.as_view(), name='comment_detail'), // Not needed
+    path('comment/<int:pk>/delete/', CommentDeleteView.as_view(), name='comment_delete'),
+
+    # Vote Comment
+    path('vote_comment/create/', VoteCommentCreateView.as_view(), name='vote_create'),
+    path('vote_comment/<int:pk>/detail/', VoteCommentRetrieveUpdateDestroyView.as_view(), name='vote_comment_rud'),  # pk = Comment.id
 
     # Category
     path('category/list', CategoryListView.as_view(), name='category_list'),
