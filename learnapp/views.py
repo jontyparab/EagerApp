@@ -1,6 +1,7 @@
 import re
 from django.conf import settings
 from decouple import config
+
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.shortcuts import get_object_or_404
 from django.views import View
