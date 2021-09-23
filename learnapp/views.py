@@ -423,7 +423,7 @@ class FileStorageView(APIView):
 
                 # Saving to firebase storage
                 uploadedImage = storage.child(f"images/{file_key}").put(f"media/{file_key}")
-                print('=======', uploadedImage)
+                # print('=======', uploadedImage)
                 uploadedImageURL = storage.child(f"images/{file_key}").get_url(uploadedImage['downloadTokens'])
                 default_storage.delete(file_key)  # deleting from temporary storage
 
@@ -437,18 +437,21 @@ class FileStorageView(APIView):
             else:
                 # print('=============', bool(re.match('image/', file.content_type)), file.size < 3000000)
                 raise ValueError('File should be image and less than 5MB.')
-        except ValueError:
-            raise ValidationError(detail="Failed to upload file.")
+        except Exception:
+            raise ValidationError(detail="Something went wrong.")
 
     def delete(self, request):
-        file_url = request.data['url']
-        print('===============', file_url)
-        bucket = storage_super.bucket
-        file_ref = FileRef.objects.get(url=file_url)
-        if file_ref.author == request.user:
-            blob = bucket.blob(file_ref.name)
-            blob.delete()
-            file_ref.delete()
-            return Response(status=status.HTTP_204_NO_CONTENT)
-        else:
-            raise PermissionDenied(detail='Something went wrong')
+        try:
+            file_url = request.data['url']
+            print('===============', file_url)
+            bucket = storage_super.bucket
+            file_ref = FileRef.objects.get(url=file_url)
+            if file_ref.author == request.user:
+                blob = bucket.blob(file_ref.name)
+                blob.delete()
+                file_ref.delete()
+                return Response(status=status.HTTP_204_NO_CONTENT)
+            else:
+                raise PermissionDenied(detail='Access denied..')
+        except Exception:
+            raise ValidationError(detail="Something went wrong.")
