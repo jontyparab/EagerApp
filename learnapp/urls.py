@@ -1,6 +1,8 @@
 from django.contrib import admin
+from django.conf import settings
 from django.urls import path
 from .views import *
+from django.conf.urls.static import static
 
 urlpatterns = [
     # Posts
@@ -33,4 +35,7 @@ urlpatterns = [
 
     # Category
     path('category/list', CategoryListView.as_view(), name='category_list'),
-]
+
+    # File Upload
+    path('file/', FileStorageView.as_view(), name='upload_image_view')
+] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
