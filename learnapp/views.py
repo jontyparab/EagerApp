@@ -1,17 +1,33 @@
+import re
+from django.conf import settings
+from decouple import config
+
+from django.contrib.auth.mixins import LoginRequiredMixin
 from django.shortcuts import get_object_or_404
+from django.views import View
 from rest_framework import permissions
 from rest_framework.exceptions import PermissionDenied, ValidationError, NotFound
+from rest_framework import status
+from rest_framework import status
+from rest_framework.response import Response
 from rest_framework.authentication import SessionAuthentication, BasicAuthentication
 from rest_framework_simplejwt.authentication import JWTAuthentication
+from rest_framework.parsers import MultiPartParser
+from rest_framework.decorators import parser_classes
+from rest_framework.views import APIView
 from rest_framework.generics import CreateAPIView, ListAPIView, DestroyAPIView, UpdateAPIView, RetrieveAPIView, \
     RetrieveUpdateDestroyAPIView
+import pyrebase
+import os
+
+from django.core.files.storage import default_storage
 from django.db import IntegrityError
 from django.db.models import Avg, Count, Sum
 from django.contrib.auth import get_user_model
 from .serializers import PostSerializer, CollectionSerializer, VoteSerializer, CategorySerializer, CommentSerializer, \
     VoteCommentSerializer
 from accounts.models import UserProfile
-from .models import Post, Collection, Vote, Category, Comment, VoteComment
+from .models import Post, Collection, Vote, Category, Comment, VoteComment, FileRef
 
 
 # POSTS
@@ -322,7 +338,6 @@ class VoteCommentRetrieveUpdateDestroyView(RetrieveUpdateDestroyAPIView):
             raise PermissionDenied(detail='Permission denied.')
 
 
-
 # class VoteUpdateView(UpdateAPIView):
 #     permission_classes = [permissions.IsAuthenticated]
 #     model = Vote
@@ -371,3 +386,70 @@ class CategoryListView(ListAPIView):
     model = Category
     serializer_class = CategorySerializer
     queryset = Category.objects.all()
+
+
+# STORAGE
+# Configuration
+config = {
+    "apiKey": config('fire_apiKey'),
+    "authDomain": config('fire_authDomain'),
+    "projectId": config('fire_projectId'),
+    "storageBucket": config('fire_storageBucket'),
+    "messagingSenderId": config('fire_messagingSenderId'),
+    "appId": config('fire_appId'),
+    "databaseURL": config('fire_databaseURL'),
+}
+firebase = pyrebase.initialize_app(config)
+storage = firebase.storage()
+db = firebase.database()
+
+# For Service Account (pyrebase bug)
+config['serviceAccount'] = os.path.join(settings.BASE_DIR, 'google-credentials.json')
+firebase_super = pyrebase.initialize_app(config)
+storage_super = firebase_super.storage()
+
+
+class FileStorageView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+    parser_classes = [MultiPartParser]
+
+    def post(self, request):
+        try:
+            # Getting image
+            file = request.FILES["image"]
+            # print(f"=======================", os.path.join(settings.BASE_DIR, 'firebase-credentials.json'))
+            if bool(re.match('image/', file.content_type)) and file.size < 3000000:
+                file_key = db.generate_key()  # generating unique key
+                default_storage.save(file_key, file)  # Temporarily storing it in default storage
+
+                # Saving to firebase storage
+                uploadedImage = storage.child(f"images/{file_key}").put(f"media/{file_key}")
+                # print('=======', uploadedImage)
+                uploadedImageURL = storage.child(f"images/{file_key}").get_url(uploadedImage['downloadTokens'])
+                default_storage.delete(file_key)  # deleting from temporary storage
+
+                # Create a entry in FileRef for later reference
+                FileRef.objects.create(author=request.user, name=uploadedImage['name'], url=uploadedImageURL)
+
+                return Response({
+                    "status": True,
+                    "url": uploadedImageURL
+                }, status=status.HTTP_201_CREATED)
+            else:
+                print('=============', bool(re.match('image/', file.content_type)), file.size < 3000000)
+                raise ValueError('File should be image and less than 5MB.')
+        except Exception:
+            raise ValidationError(detail="Failed to upload file.")
+
+    def delete(self, request):
+        file_url = request.data['url']
+        print('===============', file_url)
+        bucket = storage_super.bucket
+        file_ref = FileRef.objects.get(url=file_url)
+        if file_ref.author == request.user:
+            blob = bucket.blob(file_ref.name)
+            blob.delete()
+            file_ref.delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        else:
+            raise PermissionDenied(detail='Something went wrong')

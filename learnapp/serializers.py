@@ -73,12 +73,13 @@ class PostSerializer(serializers.ModelSerializer):
         instance.resources = validated_data.get('resources', instance.resources)
         instance.category = validated_data.get('category', instance.category)
         instance.tags = validated_data.get('tags', instance.tags)
+        instance.image = validated_data.get('image', instance.image)
         instance.save()
         return instance
 
     class Meta:
         model = Post
-        fields = ('id', 'author', 'title', 'description', 'resources', 'tags', 'category', 'score')
+        fields = ('id', 'author', 'title', 'description', 'resources', 'category', 'tags', 'image', 'score')
 
 
 class VoteSerializer(serializers.ModelSerializer):

@@ -17,6 +17,16 @@ UserModal = get_user_model()
 # networking = 'Networking'
 # hardware = 'Hardware'
 
+
+class FileRef(models.Model):
+    author = models.ForeignKey(UserModal, on_delete=models.CASCADE)
+    name = models.CharField(max_length=254)
+    url = models.URLField()
+
+    def __str__(self):
+        return f"#{self.id} {self.name} {self.url}"
+
+
 class Category(models.Model):
     name = models.CharField(max_length=254)
 
@@ -34,6 +44,7 @@ class Post(models.Model):
     resources = ArrayField(models.URLField(blank=True), size=10)
     category = models.ForeignKey(Category, on_delete=models.CASCADE)
     tags = ArrayField(models.CharField(max_length=30, validators=[tag_validator]), size=10, null=True, blank=True)
+    image = models.URLField(null=True, blank=True)
     created = models.DateTimeField(auto_now_add=True)
 
     @property

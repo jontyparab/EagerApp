@@ -156,3 +156,4 @@ cython_debug/
 # Certificates and other stuff
 cert.crt
 cert.key
+google-credentials.json
