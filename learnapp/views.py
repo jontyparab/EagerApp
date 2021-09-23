@@ -417,14 +417,13 @@ class FileStorageView(APIView):
         try:
             # Getting image
             file = request.FILES["image"]
-            # print(f"=======================", os.path.join(settings.BASE_DIR, 'firebase-credentials.json'))
             if bool(re.match('image/', file.content_type)) and file.size < 3000000:
                 file_key = db.generate_key()  # generating unique key
                 default_storage.save(file_key, file)  # Temporarily storing it in default storage
 
                 # Saving to firebase storage
                 uploadedImage = storage.child(f"images/{file_key}").put(f"media/{file_key}")
-                # print('=======', uploadedImage)
+                print('=======', uploadedImage)
                 uploadedImageURL = storage.child(f"images/{file_key}").get_url(uploadedImage['downloadTokens'])
                 default_storage.delete(file_key)  # deleting from temporary storage
 
@@ -436,9 +435,9 @@ class FileStorageView(APIView):
                     "url": uploadedImageURL
                 }, status=status.HTTP_201_CREATED)
             else:
-                print('=============', bool(re.match('image/', file.content_type)), file.size < 3000000)
+                # print('=============', bool(re.match('image/', file.content_type)), file.size < 3000000)
                 raise ValueError('File should be image and less than 5MB.')
-        except Exception:
+        except ValueError:
             raise ValidationError(detail="Failed to upload file.")
 
     def delete(self, request):
