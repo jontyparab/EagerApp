@@ -4,7 +4,9 @@ from decouple import config
 
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.shortcuts import get_object_or_404
+from django.utils.decorators import method_decorator
 from django.views import View
+from django.views.decorators.csrf import csrf_exempt
 from rest_framework import permissions
 from rest_framework.exceptions import PermissionDenied, ValidationError, NotFound
 from rest_framework import status
@@ -86,6 +88,9 @@ class PostDeleteView(DestroyAPIView):
 
     def perform_destroy(self, instance):
         if instance.author == self.request.user:
+            print("+++++++++++++++++++GROSSS++++++++++++++++++")
+            if bool(instance.image):
+                FileStorageView.file_delete_helper(self.request, instance.image)
             super(PostDeleteView, self).perform_destroy(instance)
         else:
             raise PermissionDenied(detail='Permission denied.')
@@ -443,15 +448,22 @@ class FileStorageView(APIView):
     def delete(self, request):
         try:
             file_url = request.data['url']
-            print('===============', file_url)
+            self.file_delete_helper(request, file_url)
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        except Exception:
+            raise ValidationError(detail="Something went wrong.")
+
+    @method_decorator(csrf_exempt)
+    def file_delete_helper(self, url):
+        try:
+            print('===============', url)
             bucket = storage_super.bucket
-            file_ref = FileRef.objects.get(url=file_url)
-            if file_ref.author == request.user:
+            file_ref = FileRef.objects.get(url=url)
+            if file_ref.author == self.request.user:
                 blob = bucket.blob(file_ref.name)
                 blob.delete()
                 file_ref.delete()
-                return Response(status=status.HTTP_204_NO_CONTENT)
             else:
-                raise PermissionDenied(detail='Access denied..')
+                raise PermissionDenied(detail='Access denied.')
         except Exception:
             raise ValidationError(detail="Something went wrong.")
