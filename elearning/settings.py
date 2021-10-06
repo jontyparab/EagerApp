@@ -160,6 +160,9 @@ STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 # Media files
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
+# Temporary file, generate temp path for files smaller than 0 bytes (sending to firebase)
+FILE_UPLOAD_MAX_MEMORY_SIZE = 0
+
 # # Extra places for collectstatic to find static files.
 # STATICFILES_DIRS = (
 #     os.path.join(BASE_DIR, 'static'),
