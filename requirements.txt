@@ -15,7 +15,7 @@ firebase-admin==5.0.2
 gcloud==0.17.0
 google-api-core==1.31.3
 google-api-python-client==2.22.0
-google-auth==1.9.0
+google-auth==1.25.0
 google-auth-httplib2==0.1.0
 google-cloud-core==2.0.0
 google-cloud-firestore==2.3.2
