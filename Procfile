@@ -1,2 +1,2 @@
 web: gunicorn elearning.wsgi --log-file -
-release: python3 manage.py migrate
+release: python manage.py migrate
