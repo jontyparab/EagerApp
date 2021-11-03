@@ -41,15 +41,19 @@ class FileStorageView(APIView):
     def get(self, request):
         try:
             files_type = request.query_params.get('type')
-
+            print(files_type)
             if files_type == 'backgrounds':
+                print('Yes BG')
                 url_arr = self.static_files_getter()
                 return Response({
                     "file": url_arr
                 }, status=status.HTTP_200_OK)
+            print('after OwO')
         except ValueError as e:
+            print('First Exception')
             raise ValidationError(detail=e)
         except Exception:
+            print('Second Exception')
             raise ValidationError(detail='Something went wrong.')
 
     def post(self, request):
@@ -117,9 +121,12 @@ class FileStorageView(APIView):
         all_files = self.storage_super.child().list_files()
         url_arr = []
         for file in all_files:
+            print('File there')
             try:
                 if bool(re.match('static/[\d]{1}', file.name)):
                     url_arr.append(self.storage_super.child(file.name).get_url(None))
             except Exception:
+                print('Static failed')
                 raise ValueError("Couldn't fetch files.")
+        print('Static run sucss')
         return url_arr
