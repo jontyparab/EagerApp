@@ -104,7 +104,7 @@ class FileStorageView(APIView):
             # Saving to firebase storage
             uploadedImage = self.storage.child(f"images/{file_key}").put(file_path)
             print(uploadedImage)
-            uploadedImageURL = self.storage.child(f"images/{file_key}").get_url(uploadedImage['downloadTokens'])
+            uploadedImageURL = self.storage.child(f"images/{file_key}").get_url()
             return uploadedImage['name'], uploadedImageURL
 
     def file_delete_helper(self, url):
@@ -123,7 +123,7 @@ class FileStorageView(APIView):
         for file in all_files:
             try:
                 if bool(re.match('static/[\d]{1}', file.name)):
-                    url_arr.append(self.storage_super.child(file.name).get_url(None))
+                    url_arr.append(self.storage_super.child(file.name).get_url())
             except Exception as e:
                 print(url_arr, e)
                 print('Static failed')
