@@ -124,8 +124,8 @@ class FileStorageView(APIView):
             try:
                 if bool(re.match('static/[\d]{1}', file.name)):
                     url_arr.append(self.storage_super.child(file.name).get_url(None))
-            except Exception:
-                print(url_arr)
+            except Exception as e:
+                print(url_arr, e)
                 print('Static failed')
                 raise ValueError("Couldn't fetch files.")
         print('Static run sucss')
