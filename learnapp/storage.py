@@ -40,7 +40,8 @@ class FileStorageView(APIView):
 
     def get(self, request):
         try:
-            files_type = request.GET.get('type')
+            files_type = request.query_params.get('type')
+
             if files_type == 'backgrounds':
                 url_arr = self.static_files_getter()
                 return Response({
