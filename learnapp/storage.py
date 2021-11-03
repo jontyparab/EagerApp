@@ -121,7 +121,7 @@ class FileStorageView(APIView):
         all_files = self.storage_super.child().list_files()
         url_arr = []
         for file in all_files:
-            print('File there')
+            print(file.name)
             try:
                 if bool(re.match('static/[\d]{1}', file.name)):
                     url_arr.append(self.storage_super.child(file.name).get_url(None))
